@@ -1,11 +1,11 @@
-;;; list-extra-font-lock.el --- Highlight bound variables and quoted exprs.
+;;; lisp-extra-font-lock.el --- Highlight bound variables and quoted exprs.
 
 ;; Copyright (C) 2014-2015 Anders Lindgren
 
 ;; Author: Anders Lindgren
 ;; Keywords: languages, faces
 ;; Created: 2014-11-22
-;; Version: 0.0.0
+;; Version: 0.0.1
 ;; URL: https://github.com/Lindydancer/lisp-extra-font-lock
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -35,7 +35,8 @@
 ;;
 ;; * Parameters in functions and lambdas
 ;;
-;; * Variables bound by `let' and `dolist'
+;; * Variables bound by `let' and `dolist'. Global variables rebound
+;;   by `let' is highlighted in a different color.
 ;;
 ;; * Quoted expressions
 ;;
@@ -76,8 +77,14 @@
 ;; redefine the face (e.g. using a theme), or you can rebind the
 ;; corresponding variable.
 ;;
-;; * Variables are highlighted using the standard face
+;; * Local variables are highlighted using the standard face
 ;;   `font-lock-variable-name-face'.
+;;
+;; * Special (global) variables that are rebound by `let' are
+;;   highlighted using the face bound to the variable
+;;   `lisp-extra-font-lock-special-variable-name-face' (by default
+;;   `lisp-extra-font-lock-special-variable-name', which inherits from
+;;   `font-lock-warning-face'.)
 ;;
 ;; * Quoted expressions use the face bound to the variable
 ;;   `lisp-extra-font-lock-quoted-face' (by default
@@ -143,6 +150,27 @@ To disable this highlighting, set this to nil."
 (defcustom lisp-extra-font-lock-quoted-face 'lisp-extra-font-lock-quoted
   "The face used to highlight quoted expressions.
 To disable this highlighting, set this to nil."
+  :type '(choice (const nil)
+                 face)
+  :group 'lisp-extra-font-lock)
+
+
+(defface lisp-extra-font-lock-special-variable-name
+  '((t :inherit font-lock-warning-face))
+  "The default face used to highlight special variables bound by `let'."
+  :group 'lisp-extra-font-lock)
+
+
+(defcustom lisp-extra-font-lock-special-variable-name-face
+  'lisp-extra-font-lock-special-variable-name
+  "The face used to highlight special variables bound by `let'.
+
+A special variable is a global variable defined by `defvar'. See
+`special-variable-p' for details.
+
+To disable this highlighting, set this to nil. To highlight
+special variables like plain variables, set this to
+`font-lock-variable-name-face'."
   :type '(choice (const nil)
                  face)
   :group 'lisp-extra-font-lock)
@@ -258,7 +286,9 @@ To disable this highlighting, set this to nil."
           (lisp-extra-font-lock-end-position)))
       ;; Post-match form
       (goto-char (match-end 0))
-      (0 font-lock-variable-name-face)))
+      (0 (if (special-variable-p (intern (match-string 0)))
+             lisp-extra-font-lock-special-variable-name-face
+           font-lock-variable-name-face))))
     ;; Loop variables.
     (,(concat "("
               (regexp-opt lisp-extra-font-lock-dolist-functions)
@@ -391,7 +421,8 @@ Set match data 1 if character matched is backquote."
 (defun lisp-extra-font-lock-match-quoted-content (limit)
   "Match next part of a quoted content.
 
-Match up to next comma operator, or to the end of the quoted expression."
+Match up to next comma operator or quoted subexpression, or to
+the end of the quoted expression."
   (and (< (point) limit)
        (let ((p (point))
              res)

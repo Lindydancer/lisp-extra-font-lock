@@ -1,7 +1,7 @@
-# list-extra-font-lock - Highlight bound variables and quoted exprs
+# lisp-extra-font-lock - Highlight bound variables and quoted exprs
 
 *Author:* Anders Lindgren<br>
-*Version:* 0.0.0<br>
+*Version:* 0.0.1<br>
 *URL:* [https://github.com/Lindydancer/lisp-extra-font-lock](https://github.com/Lindydancer/lisp-extra-font-lock)<br>
 
 This package highlight bound variables and quoted expressions in
@@ -15,7 +15,8 @@ this package:
 ## What is highlighted
 
 * Parameters in functions and lambdas
-* Variables bound by `let` and `dolist`
+* Variables bound by `let` and `dolist`. Global variables rebound
+  by `let` is highlighted in a different color.
 * Quoted expressions
 * Backquoted expressions. However, subexpressions using the "," or
   ",@" are not highlighted. Also, the actual backquote and the
@@ -50,8 +51,13 @@ The following faces are used when highlighting. You can either
 redefine the face (e.g. using a theme), or you can rebind the
 corresponding variable.
 
-* Variables are highlighted using the standard face
+* Local variables are highlighted using the standard face
   `font-lock-variable-name-face`.
+* Special (global) variables that are rebound by `let` are
+  highlighted using the face bound to the variable
+  `lisp-extra-font-lock-special-variable-name-face` (by default
+  `lisp-extra-font-lock-special-variable-name`, which inherits from
+  `font-lock-warning-face`.)
 * Quoted expressions use the face bound to the variable
   `lisp-extra-font-lock-quoted-face` (by default
   `lisp-extra-font-lock-quoted`, which inherits from
