@@ -5,7 +5,7 @@
 ;; Author: Anders Lindgren
 ;; Keywords: languages, faces
 ;; Created: 2014-11-22
-;; Version: 0.0.1
+;; Version: 0.0.2
 ;; URL: https://github.com/Lindydancer/lisp-extra-font-lock
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -23,11 +23,27 @@
 
 ;;; Commentary:
 
-;; This package highlight bound variables and quoted expressions in
-;; lisp code.
+;; This package highlight the location where local variables is
+;; created (bound, for example by `let') as well as quoted and
+;; backquoted constant expressions.
+
+;; Example:
 ;;
-;; The following screenshot demonstrates the highlighting effect of
-;; this package:
+;; Below, `^' is used indicate highlighted normal variables and
+;; constant expressions. `*' is used to show highlighting of special
+;; variables (i.e. those defined by `defvar') and of the backquote and
+;; comma operators.
+;;
+;; (defun my-function (next)
+;;                     ^^^^             <- Parameters
+;;   (let ((numbers '(one two three))
+;;          ^^^^^^^  ^^^^^^^^^^^^^^^    <- Var bound by `let' and quoted expr.
+;;         (buffer-read-only t))
+;;          ****************            <- Special variable (different color)
+;;     `(,@numbers and ,next)))
+;;     *^**        ^^^ *    ^           <- Backquote and comma
+;;
+;; Screenshot:
 ;;
 ;; ![See doc/demo.png for screenshot](doc/demo.png)
 
@@ -35,14 +51,17 @@
 ;;
 ;; * Parameters in functions and lambdas
 ;;
-;; * Variables bound by `let' and `dolist'. Global variables rebound
-;;   by `let' is highlighted in a different color.
+;; * Variables bound by the special functions `let', `dolist', and
+;;   `condition-case', and other functions with the same form. Special
+;;   (global) variables rebound by `let' is highlighted in a different
+;;   color, as a warning
 ;;
 ;; * Quoted expressions
 ;;
-;; * Backquoted expressions. However, subexpressions using the "," or
-;;   ",@" are not highlighted. Also, the actual backquote and the
-;;   comma operators are highlighted as a warning.
+;; * Backquoted expressions. Subexpressions using the "," or ",@" are
+;;   not highlighted (as they are evaluted and thus not constant).
+;;   Also, the backquote and the comma operators themselves are
+;;   highlighted using a bright color as a warning.
 
 ;; Installation:
 ;;
@@ -59,16 +78,16 @@
 ;; recognized:
 ;;
 ;; * `lisp-extra-font-lock-let-functions' -- List of function with the
-;;   same syntax as `let'.
+;;   same syntax as `let'
 ;;
 ;; * `lisp-extra-font-lock-defun-functions' -- List of function with
-;;   the same syntax as `defun'.
+;;   the same syntax as `defun'
 ;;
 ;; * `lisp-extra-font-lock-lambda-functions' -- List of function with
-;;   the same syntax as `lambda'.
+;;   the same syntax as `lambda'
 ;;
 ;; * `lisp-extra-font-lock-dolist-functions' -- List of function with
-;;   the same syntax as `dolist'.
+;;   the same syntax as `dolist'
 ;;
 ;; * `lisp-extra-font-lock-bind-first-functions' -- List of function
 ;;   that bind their first argument, like `condition-case'.
@@ -78,23 +97,23 @@
 ;; corresponding variable.
 ;;
 ;; * Local variables are highlighted using the standard face
-;;   `font-lock-variable-name-face'.
+;;   `font-lock-variable-name-face'
 ;;
 ;; * Special (global) variables that are rebound by `let' are
 ;;   highlighted using the face bound to the variable
 ;;   `lisp-extra-font-lock-special-variable-name-face' (by default
 ;;   `lisp-extra-font-lock-special-variable-name', which inherits from
-;;   `font-lock-warning-face'.)
+;;   `font-lock-warning-face')
 ;;
 ;; * Quoted expressions use the face bound to the variable
 ;;   `lisp-extra-font-lock-quoted-face' (by default
 ;;   `lisp-extra-font-lock-quoted', which inherits from
-;;   `font-lock-constant-face'.)
+;;   `font-lock-constant-face')
 ;;
 ;; * The backquote and comma operators use the face bound to the
 ;;   variable `lisp-extra-font-lock-backquote-face' (by default
 ;;   `lisp-extra-font-lock-backquote', which inherits from
-;;   `font-lock-warning-face'.)
+;;   `font-lock-warning-face').
 ;;
 ;; Example:
 ;;
@@ -209,7 +228,8 @@ special variables like plain variables, set this to
 
 (defcustom lisp-extra-font-lock-dolist-functions
   '("dolist"
-    "cl-dolist")
+    "cl-dolist"
+    "dotimes")
   "List of function using same syntax as `dolist' to bind variables."
   :type '(repeat string)
   :group 'lisp-extra-font-lock)
@@ -251,7 +271,9 @@ special variables like plain variables, set this to
   :group 'lisp-extra-font-lock)
 
 
-(defvar lisp-extra-font-lock-keywords
+(defun lisp-extra-font-lock-keywords ()
+  "Font-lock keywords used by `lisp-extra-font-lock'.
+The keywords highlight variable bindings and quoted expressions."
   `(;; Function and lambda parameters
     (,(concat "("
               "\\(?:"
@@ -286,7 +308,9 @@ special variables like plain variables, set this to
           (lisp-extra-font-lock-end-position)))
       ;; Post-match form
       (goto-char (match-end 0))
-      (0 (if (special-variable-p (intern (match-string 0)))
+      (0 (if (condition-case nil
+                 (special-variable-p (intern (match-string 0)))
+               (error nil))
              lisp-extra-font-lock-special-variable-name-face
            font-lock-variable-name-face))))
     ;; Loop variables.
@@ -319,18 +343,22 @@ special variables like plain variables, set this to
       (2 lisp-extra-font-lock-backquote-face nil t)))))
 
 
+(defvar lisp-extra-font-lock--installed-keywords nil)
+
 (defun lisp-extra-font-lock-add-keywords ()
   "Add extra font-lock keywords to lisp."
-  (setq font-lock-multiline t)
-  (font-lock-add-keywords
-   nil
-   lisp-extra-font-lock-keywords
-   'append))
+  (set (make-local-variable 'font-lock-multiline) t)
+  (when (local-variable-p 'lisp-extra-font-lock--installed-keywords)
+    (font-lock-remove-keywords nil lisp-extra-font-lock--installed-keywords))
+  (let ((keywords (lisp-extra-font-lock-keywords)))
+    (set (make-local-variable 'lisp-extra-font-lock--installed-keywords)
+         keywords)
+    (font-lock-add-keywords nil keywords 'append)))
 
 
 (defun lisp-extra-font-lock-remove-keywords ()
   "Remove font-lock keywords for extra lisp highlithing."
-  (font-lock-remove-keywords nil lisp-extra-font-lock-keywords))
+  (font-lock-remove-keywords nil lisp-extra-font-lock--installed-keywords))
 
 
 ;; ----------------------------------------
@@ -457,4 +485,4 @@ the end of the quoted expression."
 
 (provide 'lisp-extra-font-lock)
 
-;;; lisp-extra-font-locks.el ends here.
+;;; lisp-extra-font-lock.el ends here.

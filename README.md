@@ -1,26 +1,45 @@
 # lisp-extra-font-lock - Highlight bound variables and quoted exprs
 
 *Author:* Anders Lindgren<br>
-*Version:* 0.0.1<br>
+*Version:* 0.0.2<br>
 *URL:* [https://github.com/Lindydancer/lisp-extra-font-lock](https://github.com/Lindydancer/lisp-extra-font-lock)<br>
 
-This package highlight bound variables and quoted expressions in
-lisp code.
+This package highlight the location where local variables is
+created (bound, for example by `let`) as well as quoted and
+backquoted constant expressions.
 
-The following screenshot demonstrates the highlighting effect of
-this package:
+## Example
+
+Below, `^` is used indicate highlighted normal variables and
+constant expressions. `*` is used to show highlighting of special
+variables (i.e. those defined by `defvar`) and of the backquote and
+comma operators.
+
+    (defun my-function (next)
+                        ^^^^             <- Parameters
+      (let ((numbers '(one two three))
+             ^^^^^^^  ^^^^^^^^^^^^^^^    <- Var bound by `let` and quoted expr.
+            (buffer-read-only t))
+             ****************            <- Special variable (different color)
+        `(,@numbers and ,next)))
+        *^**        ^^^ *    ^           <- Backquote and comma
+
+### Screenshot
 
 ![See doc/demo.png for screenshot](doc/demo.png)
 
 ## What is highlighted
 
 * Parameters in functions and lambdas
-* Variables bound by `let` and `dolist`. Global variables rebound
-  by `let` is highlighted in a different color.
+* Variables bound by the special functions `let`, `dolist`, and
+  `condition-case`, and other functions with the same form. Special
+  (global) variables rebound by `let` is highlighted in a different
+  color, as a warning
 * Quoted expressions
-* Backquoted expressions. However, subexpressions using the "," or
-  ",@" are not highlighted. Also, the actual backquote and the
-  comma operators are highlighted as a warning.
+* Backquoted expressions. Subexpressions using the "," or ",@" are
+  not highlighted (as they are evaluted and thus not constant).
+  Also, the backquote and the comma operators themselves are
+  highlighted using a bright color as a warning.
 
 ## Installation
 
@@ -37,13 +56,13 @@ You can modify the following lists to add more functions that are
 recognized:
 
 * `lisp-extra-font-lock-let-functions` -- List of function with the
-  same syntax as `let`.
+  same syntax as `let`
 * `lisp-extra-font-lock-defun-functions` -- List of function with
-  the same syntax as `defun`.
+  the same syntax as `defun`
 * `lisp-extra-font-lock-lambda-functions` -- List of function with
-  the same syntax as `lambda`.
+  the same syntax as `lambda`
 * `lisp-extra-font-lock-dolist-functions` -- List of function with
-  the same syntax as `dolist`.
+  the same syntax as `dolist`
 * `lisp-extra-font-lock-bind-first-functions` -- List of function
   that bind their first argument, like `condition-case`.
 
@@ -52,20 +71,20 @@ redefine the face (e.g. using a theme), or you can rebind the
 corresponding variable.
 
 * Local variables are highlighted using the standard face
-  `font-lock-variable-name-face`.
+  `font-lock-variable-name-face`
 * Special (global) variables that are rebound by `let` are
   highlighted using the face bound to the variable
   `lisp-extra-font-lock-special-variable-name-face` (by default
   `lisp-extra-font-lock-special-variable-name`, which inherits from
-  `font-lock-warning-face`.)
+  `font-lock-warning-face`)
 * Quoted expressions use the face bound to the variable
   `lisp-extra-font-lock-quoted-face` (by default
   `lisp-extra-font-lock-quoted`, which inherits from
-  `font-lock-constant-face`.)
+  `font-lock-constant-face`)
 * The backquote and comma operators use the face bound to the
   variable `lisp-extra-font-lock-backquote-face` (by default
   `lisp-extra-font-lock-backquote`, which inherits from
-  `font-lock-warning-face`.)
+  `font-lock-warning-face`).
 
 ### Example
 
