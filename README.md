@@ -1,7 +1,7 @@
 # lisp-extra-font-lock - Highlight bound variables and quoted exprs
 
 *Author:* Anders Lindgren<br>
-*Version:* 0.0.2<br>
+*Version:* 0.0.3<br>
 *URL:* [https://github.com/Lindydancer/lisp-extra-font-lock](https://github.com/Lindydancer/lisp-extra-font-lock)<br>
 
 This package highlight the location where local variables is
@@ -65,6 +65,8 @@ recognized:
   the same syntax as `dolist`
 * `lisp-extra-font-lock-bind-first-functions` -- List of function
   that bind their first argument, like `condition-case`.
+* `lisp-extra-font-lock-loop-functions` -- List of functions with
+  the same syntax as `cl-loop`.
 
 The following faces are used when highlighting. You can either
 redefine the face (e.g. using a theme), or you can rebind the
@@ -85,6 +87,8 @@ corresponding variable.
   variable `lisp-extra-font-lock-backquote-face` (by default
   `lisp-extra-font-lock-backquote`, which inherits from
   `font-lock-warning-face`).
+* Named arguments to `cl-loop` are highlighted using
+  `font-lock-builtin-face`.
 
 ### Example
 

@@ -5,7 +5,7 @@
 ;; Author: Anders Lindgren
 ;; Keywords: languages, faces
 ;; Created: 2014-11-22
-;; Version: 0.0.2
+;; Version: 0.0.3
 ;; URL: https://github.com/Lindydancer/lisp-extra-font-lock
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -92,6 +92,9 @@
 ;; * `lisp-extra-font-lock-bind-first-functions' -- List of function
 ;;   that bind their first argument, like `condition-case'.
 ;;
+;; * `lisp-extra-font-lock-loop-functions' -- List of functions with
+;;   the same syntax as `cl-loop'.
+;;
 ;; The following faces are used when highlighting. You can either
 ;; redefine the face (e.g. using a theme), or you can rebind the
 ;; corresponding variable.
@@ -114,6 +117,9 @@
 ;;   variable `lisp-extra-font-lock-backquote-face' (by default
 ;;   `lisp-extra-font-lock-backquote', which inherits from
 ;;   `font-lock-warning-face').
+;;
+;; * Named arguments to `cl-loop' are highlighted using
+;;   `font-lock-builtin-face'.
 ;;
 ;; Example:
 ;;
@@ -202,8 +208,15 @@ special variables like plain variables, set this to
 (defcustom lisp-extra-font-lock-let-functions
   '("let"
     "let*"
+    "letf"
+    "letf*"
     "lexical-let"
-    "lexical-let*")
+    "lexical-let*"
+    "multiple-value-bind"
+    "pcase-let"                         ; Highlights entire UPAT:s.
+    "cl-letf"
+    "cl-letf*"
+    "cl-multiple-value-bind")
   "List of function using same syntax as `let' to bind variables."
   :type '(repeat string)
   :group 'lisp-extra-font-lock)
@@ -213,7 +226,11 @@ special variables like plain variables, set this to
   '("defun"
     "defun*"
     "defmacro"
-    "defmacro*")
+    "defmacro*"
+    "defsubst"
+    "cl-defun"
+    "cl-defmacro"
+    "cl-defsubst")
   "List of function using same syntax as `defun' to bind variables."
   :type '(repeat string)
   :group 'lisp-extra-font-lock)
@@ -228,8 +245,9 @@ special variables like plain variables, set this to
 
 (defcustom lisp-extra-font-lock-dolist-functions
   '("dolist"
+    "dotimes"
     "cl-dolist"
-    "dotimes")
+    "cl-dotimes")
   "List of function using same syntax as `dolist' to bind variables."
   :type '(repeat string)
   :group 'lisp-extra-font-lock)
@@ -238,6 +256,14 @@ special variables like plain variables, set this to
 (defcustom lisp-extra-font-lock-bind-first-functions
   '("condition-case")
   "List of function that bind their first argument."
+  :type '(repeat string)
+  :group 'lisp-extra-font-lock)
+
+
+(defcustom lisp-extra-font-lock-loop-functions
+  '("loop"
+    "cl-loop")
+  "List of functions using same syntax as `loop' to bind variables.."
   :type '(repeat string)
   :group 'lisp-extra-font-lock)
 
@@ -313,7 +339,7 @@ The keywords highlight variable bindings and quoted expressions."
                (error nil))
              lisp-extra-font-lock-special-variable-name-face
            font-lock-variable-name-face))))
-    ;; Loop variables.
+    ;; Variables bound by `cl-dolist' etc.
     (,(concat "("
               (regexp-opt lisp-extra-font-lock-dolist-functions)
               "[ \t]+(\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
@@ -324,6 +350,21 @@ The keywords highlight variable bindings and quoted expressions."
               "[ \t]+\\_<\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
      (1 (and (not (string= (match-string 1) "nil"))
              font-lock-variable-name-face)))
+    ;; Bind variables and named arguments to `cl-loop'.
+    (,(concat "("
+              (regexp-opt lisp-extra-font-lock-loop-functions)
+              "\\_>")
+     (lisp-extra-font-lock-match-loop-keywords
+      ;; Pre-match form. Value of expression is limit for submatcher.
+      (progn
+        (goto-char (match-end 0))
+        (save-excursion
+          (goto-char (match-beginning 0))
+          (lisp-extra-font-lock-end-position)))
+      ;; Post-match form.
+      (goto-char (match-end 0))
+      (1 font-lock-builtin-face)
+      (2 font-lock-variable-name-face nil t)))
     (;; Quote and backquote.
      ;;
      ;; Matcher: Set match-data 1 if backquote.
@@ -482,6 +523,78 @@ the end of the quoted expression."
            (goto-char limit))
          t)))
 
+(defvar lisp-extra-font-lock-loop-keywords
+  '("=" "above" "across" "across-ref" "always" "and" "append" "as"
+    "being" "below" "buffer" "buffers" "by"
+    "collect" "collecting" "concat" "count"
+    "do" "doing" "downfrom" "downto"
+    "each" "element" "elements" "else" "end"
+    "extent" "extents" "external-symbol" "external-symbols"
+    "finally" "frames" "from"
+    "hash-key" "hash-keys" "hash-value" "hash-values"
+    "if" "in" "in-ref" "initially" "interval" "intervals"
+    "key-binding" "key-bindings" "key-code" "key-codes" "key-seq" "key-seqs"
+    "maximize" "minimize"
+    "named" "nconc" "nconcing" "never"
+    "of" "of-ref" "on" "overlay" "overlays"
+    "present-symbol" "present-symbols" "property"
+    "repeat" "return"
+    "screen" "screens" "sum" "symbol" "symbols"
+    "the" "then" "thereis" "to"
+    "unless" "until" "upfrom" "upto" "using"
+    "vconcat"
+    "when" "while" "windows")
+  "List of `cl-loop' named parameters, excluding variable binding ones.")
+
+(defvar lisp-extra-font-lock-loop-keywords-with-var '("for"
+                                                      "index"
+                                                      "into"
+                                                      "with")
+  "List of `cl-loop' named variable binding parameters.")
+
+
+;; Match named loop keywords, and (optionally) any bound variables.
+;;
+;; Note, does not support "destructuring", i.e. binding several
+;; variables using pattern matching. If this is used, the entire
+;; expression is highlighted as a variable.
+(defun lisp-extra-font-lock-match-loop-keywords (limit)
+  "Match named keyword of `loop' and highlight variable arguments."
+  (while
+      (progn
+        (forward-comment (buffer-size))
+        (and (< (point) limit)
+             (not (looking-at
+                   (concat
+                    "\\_<"
+                    "\\("
+                    (regexp-opt (append
+                                 lisp-extra-font-lock-loop-keywords-with-var
+                                 lisp-extra-font-lock-loop-keywords))
+                    "\\)"
+                    "\\_>")))))
+    (condition-case nil
+        (forward-sexp)
+      (error (goto-char limit))))
+  (if (not (< (point) limit))
+      nil
+    (goto-char (match-end 0))
+    (when (member (match-string 1) lisp-extra-font-lock-loop-keywords-with-var)
+      (forward-comment (buffer-size))
+      (let ((var-start (point)))
+        (when (condition-case nil
+                  (progn
+                    (forward-sexp)
+                    t)
+                (error nil))
+          (set-match-data (list
+                           (match-beginning 0)
+                           (point)
+                           (match-beginning 1)
+                           (match-end 1)
+                           var-start
+                           (point))))))
+    t))
 
 (provide 'lisp-extra-font-lock)
 
