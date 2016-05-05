@@ -482,8 +482,9 @@ Set match data 1 if character matched is backquote."
                   (and res
                        (or
                         (lisp-extra-font-lock-is-in-comment-or-string)
-                        ;; Don't match ?' and ?`.
-                        (eq (char-before (match-beginning 0)) ??)))))
+                        ;; Don't match ?', ?`, #' or #`.
+                        (eq (char-before (match-beginning 0)) ??)
+                        (eq (char-before (match-beginning 0)) ?\#)))))
     res))
 
 
