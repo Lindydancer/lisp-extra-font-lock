@@ -1,0 +1,16 @@
+«m:;;; »«x:demo.el --- Demonstration program for `«c:lisp-extra-font-lock»'.
+»
+«m:;; »«x:The package `«c:lisp-extra-font-lock»' highlights variables bound by
+»«m:;; »«x:`«c:defun»', `«c:lambda»', `«c:let»', `«c:dolist»', etc. It also highlight quoted
+»«m:;; »«x:and backquoted expressions -- excluding any comma operator
+»«m:;; »«x:expressions.
+»
+(«k:defun» «f:my-function» («v:next»)                          «m:; »«x:<- Parameters
+»  («k:let» ((«v:numbers» '«:lisp-extra-font-lock-quoted:(one two three)»)                 «m:; »«x:<- `«c:let»' and quoted expr
+»        («:lisp-extra-font-lock-special-variable-name:buffer-read-only» t))                      «m:; »«x:<- Special variable
+»    «:lisp-extra-font-lock-backquote:`»«:lisp-extra-font-lock-quoted:(»«:lisp-extra-font-lock-backquote:,@»numbers«:lisp-extra-font-lock-quoted: and »«:lisp-extra-font-lock-backquote:,»next«:lisp-extra-font-lock-quoted:)»))                       «m:; »«x:<- Backquote and comma
+»
+«m:;; »«x:(my-function 'four) => (one two three and four)
+»
+«m:;;; »«x:demo.el ends here
+»

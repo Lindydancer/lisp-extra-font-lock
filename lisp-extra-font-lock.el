@@ -5,7 +5,7 @@
 ;; Author: Anders Lindgren
 ;; Keywords: languages, faces
 ;; Created: 2014-11-22
-;; Version: 0.0.3
+;; Version: 0.0.4
 ;; URL: https://github.com/Lindydancer/lisp-extra-font-lock
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -62,6 +62,8 @@
 ;;   not highlighted (as they are evaluted and thus not constant).
 ;;   Also, the backquote and the comma operators themselves are
 ;;   highlighted using a bright color as a warning.
+;;
+;; * Hash-quoted symbols.
 
 ;; Installation:
 ;;
@@ -174,6 +176,21 @@ To disable this highlighting, set this to nil."
 
 (defcustom lisp-extra-font-lock-quoted-face 'lisp-extra-font-lock-quoted
   "The face used to highlight quoted expressions.
+To disable this highlighting, set this to nil."
+  :type '(choice (const nil)
+                 face)
+  :group 'lisp-extra-font-lock)
+
+
+(defface lisp-extra-font-lock-quoted-function
+  '((t :inherit font-lock-function-name-face))
+  "The default face used to highlight #'-quoted function symbols."
+  :group 'lisp-extra-font-lock)
+
+
+(defcustom lisp-extra-font-lock-quoted-function-face
+  'lisp-extra-font-lock-quoted-function
+  "The face used to highlight #'-quoted function symbols.
 To disable this highlighting, set this to nil."
   :type '(choice (const nil)
                  face)
@@ -381,7 +398,10 @@ The keywords highlight variable bindings and quoted expressions."
       (goto-char (match-end 0))
       ;; Highlight rules for submatcher.
       (1 lisp-extra-font-lock-quoted-face append)
-      (2 lisp-extra-font-lock-backquote-face nil t)))))
+      (2 lisp-extra-font-lock-backquote-face nil t)))
+    ;; Function read syntax
+    ("#'\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>"
+     1 lisp-extra-font-lock-quoted-function-face)))
 
 
 (defvar lisp-extra-font-lock--installed-keywords nil)
@@ -455,35 +475,41 @@ form is used, or `point-max' if none is found."
            nil))))
 
 
-(defun lisp-extra-font-lock-is-in-comment-or-string ()
-  "Return non-nil if point is in comment or string.
+(defun lisp-extra-font-lock-is-in-comment-or-string (pos)
+  "Return non-nil if POS is in a comment, string, constant, or reader macro.
 
 This assumes that Font Lock is active and has fontified comments
 and strings."
-  (let ((props (text-properties-at (point)))
-        (faces '()))
-    (while props
-      (let ((pr (pop props))
-            (value (pop props)))
-        (if (eq pr 'face)
-            (setq faces value))))
-    (unless (listp faces)
-      (setq faces (list faces)))
-    (or (memq 'font-lock-comment-face faces)
-        (memq 'font-lock-string-face faces)
-        (memq 'font-lock-doc-face faces))))
+  (or (let ((props (text-properties-at (point)))
+            (faces '()))
+        (while props
+          (let ((pr (pop props))
+                (value (pop props)))
+            (if (eq pr 'face)
+                (setq faces value))))
+        (unless (listp faces)
+          (setq faces (list faces)))
+        (or (memq 'font-lock-comment-face faces)
+            (memq 'font-lock-string-face faces)
+            (memq 'font-lock-doc-face faces)))
+      ;; Plain character constant ?<char>.
+      (eq (char-before pos) ??)
+      ;; Escaped character constant ?\<char>.
+      (and (eq (char-before pos) ?\\)
+           (eq (char-before (- pos 1) ??)))
+      ;; Reader macro like #'.
+      (eq (char-before pos) ?#)))
 
 
 (defun lisp-extra-font-lock-match-quote-and-backquote (limit)
   "Search for quote and backquote in in code.
 Set match data 1 if character matched is backquote."
   (let (res)
-    (while (progn (setq res (re-search-forward "\\(?:\\(`\\)\\|'\\)" limit t))
-                  (and res
-                       (or
-                        (lisp-extra-font-lock-is-in-comment-or-string)
-                        ;; Don't match ?' and ?`.
-                        (eq (char-before (match-beginning 0)) ??)))))
+    (while
+        (progn (setq res (re-search-forward "\\(?:\\(`\\)\\|'\\)" limit t))
+               (and res
+                    (lisp-extra-font-lock-is-in-comment-or-string
+                     (match-beginning 0)))))
     res))
 
 
@@ -495,13 +521,12 @@ the end of the quoted expression."
   (and (< (point) limit)
        (let ((p (point))
              res)
-         (while (progn
-                  (setq res (re-search-forward "\\(,@?\\|[`']\\)" limit t))
-                  (and res
-                       (or
-                        (lisp-extra-font-lock-is-in-comment-or-string)
-                        ;; Don't match ?<char>
-                        (eq (char-before (match-beginning 0)) ??)))))
+         (while
+             (progn
+               (setq res (re-search-forward "\\(,@?\\|[`']\\)" limit t))
+               (and res
+                    (lisp-extra-font-lock-is-in-comment-or-string
+                     (match-beginning 0)))))
          (if res
              ;; Match up to next quoted subpart or comma operator.
              (let ((is-comma (eq (char-after (match-beginning 0)) ?,)))

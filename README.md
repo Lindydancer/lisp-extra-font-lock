@@ -1,7 +1,7 @@
 # lisp-extra-font-lock - Highlight bound variables and quoted exprs
 
 *Author:* Anders Lindgren<br>
-*Version:* 0.0.3<br>
+*Version:* 0.0.4<br>
 *URL:* [https://github.com/Lindydancer/lisp-extra-font-lock](https://github.com/Lindydancer/lisp-extra-font-lock)<br>
 
 This package highlight the location where local variables is
@@ -40,6 +40,7 @@ comma operators.
   not highlighted (as they are evaluted and thus not constant).
   Also, the backquote and the comma operators themselves are
   highlighted using a bright color as a warning.
+* Hash-quoted symbols.
 
 ## Installation
 
