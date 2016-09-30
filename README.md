@@ -1,7 +1,7 @@
 # lisp-extra-font-lock - Highlight bound variables and quoted exprs
 
 *Author:* Anders Lindgren<br>
-*Version:* 0.0.4<br>
+*Version:* 0.0.5<br>
 *URL:* [https://github.com/Lindydancer/lisp-extra-font-lock](https://github.com/Lindydancer/lisp-extra-font-lock)<br>
 
 This package highlight the location where local variables is
@@ -31,10 +31,10 @@ comma operators.
 ## What is highlighted
 
 * Parameters in functions and lambdas
-* Variables bound by the special functions `let`, `dolist`, and
-  `condition-case`, and other functions with the same form. Special
-  (global) variables rebound by `let` is highlighted in a different
-  color, as a warning
+* Variables bound by specal constructs like `let`, `dolist`,
+  `condition-case`, and `pcase-let`
+* Normal variables and variables declared as globals using `defvar`
+  are highlighted in different colors, as a warning
 * Quoted expressions
 * Backquoted expressions. Subexpressions using the "," or ",@" are
   not highlighted (as they are evaluted and thus not constant).
@@ -48,7 +48,7 @@ Place this package in a directory in the load-path. To activate it,
 use *customize* or place the following lines in a suitable init
 file:
 
-       (require 'lisp-extra-font-lock-mode)
+       (require 'lisp-extra-font-lock)
        (lisp-extra-font-lock-global-mode 1)
 
 ## Customization
@@ -75,8 +75,8 @@ corresponding variable.
 
 * Local variables are highlighted using the standard face
   `font-lock-variable-name-face`
-* Special (global) variables that are rebound by `let` are
-  highlighted using the face bound to the variable
+* Special (global) variables that are rebound are highlighted using
+  the face bound to the variable
   `lisp-extra-font-lock-special-variable-name-face` (by default
   `lisp-extra-font-lock-special-variable-name`, which inherits from
   `font-lock-warning-face`)

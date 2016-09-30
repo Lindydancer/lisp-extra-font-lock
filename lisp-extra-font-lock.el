@@ -5,7 +5,7 @@
 ;; Author: Anders Lindgren
 ;; Keywords: languages, faces
 ;; Created: 2014-11-22
-;; Version: 0.0.4
+;; Version: 0.0.5
 ;; URL: https://github.com/Lindydancer/lisp-extra-font-lock
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -51,10 +51,11 @@
 ;;
 ;; * Parameters in functions and lambdas
 ;;
-;; * Variables bound by the special functions `let', `dolist', and
-;;   `condition-case', and other functions with the same form. Special
-;;   (global) variables rebound by `let' is highlighted in a different
-;;   color, as a warning
+;; * Variables bound by specal constructs like `let', `dolist',
+;;   `condition-case', and `pcase-let'
+;;
+;; * Normal variables and variables declared as globals using `defvar'
+;;   are highlighted in different colors, as a warning
 ;;
 ;; * Quoted expressions
 ;;
@@ -71,7 +72,7 @@
 ;; use *customize* or place the following lines in a suitable init
 ;; file:
 ;;
-;;    (require 'lisp-extra-font-lock-mode)
+;;    (require 'lisp-extra-font-lock)
 ;;    (lisp-extra-font-lock-global-mode 1)
 
 ;; Customization:
@@ -104,8 +105,8 @@
 ;; * Local variables are highlighted using the standard face
 ;;   `font-lock-variable-name-face'
 ;;
-;; * Special (global) variables that are rebound by `let' are
-;;   highlighted using the face bound to the variable
+;; * Special (global) variables that are rebound are highlighted using
+;;   the face bound to the variable
 ;;   `lisp-extra-font-lock-special-variable-name-face' (by default
 ;;   `lisp-extra-font-lock-special-variable-name', which inherits from
 ;;   `font-lock-warning-face')
@@ -314,6 +315,16 @@ special variables like plain variables, set this to
   :group 'lisp-extra-font-lock)
 
 
+(defun lisp-extra-font-lock-variable-face-form (name)
+  "A form suitable for a font-lock face expression.
+
+NAME is a form that should evalute to the name of the symbol, as a string."
+  `(if (ignore-errors (let ((symbol (intern-soft ,name)))
+                        (and symbol
+                             (special-variable-p symbol))))
+       lisp-extra-font-lock-special-variable-name-face
+     font-lock-variable-name-face))
+
 (defun lisp-extra-font-lock-keywords ()
   "Font-lock keywords used by `lisp-extra-font-lock'.
 The keywords highlight variable bindings and quoted expressions."
@@ -336,7 +347,8 @@ The keywords highlight variable bindings and quoted expressions."
           (lisp-extra-font-lock-end-position)))
       ;; Post-match form
       nil
-      (0 font-lock-variable-name-face nil t)))
+      (0 ,(lisp-extra-font-lock-variable-face-form '(match-string 0))
+         nil t)))
     ;; Variables bound by `let'.
     (,(concat "("
               (regexp-opt lisp-extra-font-lock-let-functions)
@@ -351,22 +363,18 @@ The keywords highlight variable bindings and quoted expressions."
           (lisp-extra-font-lock-end-position)))
       ;; Post-match form
       (goto-char (match-end 0))
-      (0 (if (condition-case nil
-                 (special-variable-p (intern (match-string 0)))
-               (error nil))
-             lisp-extra-font-lock-special-variable-name-face
-           font-lock-variable-name-face))))
+      (0 ,(lisp-extra-font-lock-variable-face-form '(match-string 0)))))
     ;; Variables bound by `cl-dolist' etc.
     (,(concat "("
               (regexp-opt lisp-extra-font-lock-dolist-functions)
               "[ \t]+(\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
-     (1 font-lock-variable-name-face))
+     (1 ,(lisp-extra-font-lock-variable-face-form '(match-string 1))))
     ;; Bind first argument like `condition-case'.
     (,(concat "("
               (regexp-opt lisp-extra-font-lock-bind-first-functions)
               "[ \t]+\\_<\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
      (1 (and (not (string= (match-string 1) "nil"))
-             font-lock-variable-name-face)))
+             ,(lisp-extra-font-lock-variable-face-form '(match-string 1)))))
     ;; Bind variables and named arguments to `cl-loop'.
     (,(concat "("
               (regexp-opt lisp-extra-font-lock-loop-functions)
@@ -381,7 +389,7 @@ The keywords highlight variable bindings and quoted expressions."
       ;; Post-match form.
       (goto-char (match-end 0))
       (1 font-lock-builtin-face)
-      (2 font-lock-variable-name-face nil t)))
+      (2 ,(lisp-extra-font-lock-variable-face-form '(match-string 2)) nil t)))
     (;; Quote and backquote.
      ;;
      ;; Matcher: Set match-data 1 if backquote.

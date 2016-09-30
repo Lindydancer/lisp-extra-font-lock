@@ -1,0 +1,26 @@
+«m:;; »«x:A plain function.
+»(«k:defun» «f:my-function1» («v:arg»)
+  («k:let» ((«v:tmp» '«:lisp-extra-font-lock-quoted:value»))
+    nil))
+
+«m:;; »«x:&optional should not be affected, but subsequent arguments should
+»«m:;; »«x:be highlighted.
+»(«k:defun» «f:my-function2» («v:arg» «t:&optional» «v:arg2»)
+  nil)
+
+«m:;; »«x:Reserved words should be highlighted.
+»(«k:defun» «f:my-function3» («v:arg» «:lisp-extra-font-lock-special-variable-name:mode-name»)
+  («k:let» ((«:lisp-extra-font-lock-special-variable-name:major-mode» '«:lisp-extra-font-lock-quoted:what»)
+        («v:my-major-mode» '«:lisp-extra-font-lock-quoted:better»))
+    nil))
+
+«m:;; »«x:`«c:dolist»'.
+»(«k:defun» «f:my-dlist» ()
+  («k:dolist» («v:arg» '«:lisp-extra-font-lock-quoted:(1 2 3)»)
+    nil))
+
+«m:;; »«x:`«c:loop»'.
+»(«k:defun» «f:my-loop» («v:my-list»)
+  («k:cl-loop» «b:for» «v:(key . value)» «b:in» my-list
+           «b:collect» key
+           «b:collect» value))

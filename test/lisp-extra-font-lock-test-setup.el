@@ -29,10 +29,17 @@
 (dolist (dir '("." ".." "../../faceup"))
   (add-to-list 'load-path (concat lisp-extra-font-lock-test-setup-dir dir)))
 
+;; Emacs 25.1 contains a bug which prevents if from highlighting
+;; "lambda" as a keyword, this may cause false errors.
+;;
+;; See http://debbugs.gnu.org/cgi/bugreport.cgi?bug=23465
+(when (and (eq emacs-major-version 25)
+           (eq emacs-minor-version 1))
+  (font-lock-add-keywords 'emacs-lisp-mode
+                          '(("\\_<lambda\\_>" (0 font-lock-keyword-face)))))
+
 (require 'lisp-extra-font-lock)
 (require 'lisp-extra-font-lock-test-files)
-
-(lisp-extra-font-lock-global-mode 1)
 
 (ert t)
 

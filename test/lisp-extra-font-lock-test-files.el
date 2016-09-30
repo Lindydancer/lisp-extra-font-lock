@@ -39,7 +39,8 @@
   "Test that FILE is fontified as the .faceup file describes.
 
 FILE is interpreted as relative to this source directory."
-  (faceup-test-font-lock-file 'emacs-lisp-mode
+  (faceup-test-font-lock-file '(emacs-lisp-mode
+                                lisp-extra-font-lock-mode)
                               (concat
                                lisp-extra-font-lock-test-dir
                                file)))
@@ -47,6 +48,7 @@ FILE is interpreted as relative to this source directory."
 
 
 (ert-deftest lisp-extra-font-lock-test-files ()
+  (should (lisp-extra-font-lock-test-file "files/basics.el"))
   (should (lisp-extra-font-lock-test-file "files/demo.el"))
   (should (lisp-extra-font-lock-test-file "files/hash-quote.el")))
 
