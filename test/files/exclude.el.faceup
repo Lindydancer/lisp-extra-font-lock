@@ -1,0 +1,16 @@
+«m:;; »«x:Don't highlight quotes in certain contexts.
+»
+«m:;; »«x:Don't highlight 'no in a comment.
+»
+«s:"Don't highlight 'no in a string."»
+
+«m:;; »«x:Not in a character constant:
+»
+(«k:setq» exclude-quote (cons ?' '«:lisp-extra-font-lock-quoted:yes»))
+
+«m:;; »«x:Not in an escapted character constant:
+»
+(«k:setq» exclude-quote (cons ?\' '«:lisp-extra-font-lock-quoted:yes»))
+
+«m:;; »«x:exclude.el ends here.
+»

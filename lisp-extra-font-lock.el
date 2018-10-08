@@ -1,11 +1,11 @@
 ;;; lisp-extra-font-lock.el --- Highlight bound variables and quoted exprs.
 
-;; Copyright (C) 2014-2015 Anders Lindgren
+;; Copyright (C) 2014-2018 Anders Lindgren
 
 ;; Author: Anders Lindgren
 ;; Keywords: languages, faces
 ;; Created: 2014-11-22
-;; Version: 0.0.5
+;; Version: 0.0.6
 ;; URL: https://github.com/Lindydancer/lisp-extra-font-lock
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -232,6 +232,7 @@ special variables like plain variables, set this to
     "lexical-let*"
     "multiple-value-bind"
     "pcase-let"                         ; Highlights entire UPAT:s.
+    "pcase-let*"
     "cl-letf"
     "cl-letf*"
     "cl-multiple-value-bind")
@@ -332,11 +333,11 @@ The keywords highlight variable bindings and quoted expressions."
     (,(concat "("
               "\\(?:"
               (regexp-opt lisp-extra-font-lock-defun-functions)
-              "[ \t]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
+              "[ \t\n]+\\_<\\(?:\\sw\\|\\s_\\)+\\_>"
               "\\|"
               (regexp-opt lisp-extra-font-lock-lambda-functions)
               "\\)"
-              "[ \t]+(")
+              "[ \t\n]+(")
      (lisp-extra-font-lock-match-argument-list
       ;; Pre-match form
       (progn
@@ -488,23 +489,13 @@ form is used, or `point-max' if none is found."
 
 This assumes that Font Lock is active and has fontified comments
 and strings."
-  (or (let ((props (text-properties-at (point)))
-            (faces '()))
-        (while props
-          (let ((pr (pop props))
-                (value (pop props)))
-            (if (eq pr 'face)
-                (setq faces value))))
-        (unless (listp faces)
-          (setq faces (list faces)))
-        (or (memq 'font-lock-comment-face faces)
-            (memq 'font-lock-string-face faces)
-            (memq 'font-lock-doc-face faces)))
+  (or (nth 8 (save-excursion
+	       (syntax-ppss pos)))   ; In comment or string.
       ;; Plain character constant ?<char>.
       (eq (char-before pos) ??)
       ;; Escaped character constant ?\<char>.
       (and (eq (char-before pos) ?\\)
-           (eq (char-before (- pos 1) ??)))
+           (eq (char-before (- pos 1)) ??))
       ;; Reader macro like #'.
       (eq (char-before pos) ?#)))
 

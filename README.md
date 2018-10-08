@@ -1,7 +1,7 @@
 # lisp-extra-font-lock - Highlight bound variables and quoted exprs
 
 *Author:* Anders Lindgren<br>
-*Version:* 0.0.5<br>
+*Version:* 0.0.6<br>
 *URL:* [https://github.com/Lindydancer/lisp-extra-font-lock](https://github.com/Lindydancer/lisp-extra-font-lock)<br>
 
 This package highlight the location where local variables is

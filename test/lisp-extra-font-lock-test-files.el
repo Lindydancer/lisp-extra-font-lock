@@ -50,7 +50,8 @@ FILE is interpreted as relative to this source directory."
 (ert-deftest lisp-extra-font-lock-test-files ()
   (should (lisp-extra-font-lock-test-file "files/basics.el"))
   (should (lisp-extra-font-lock-test-file "files/demo.el"))
-  (should (lisp-extra-font-lock-test-file "files/hash-quote.el")))
+  (should (lisp-extra-font-lock-test-file "files/hash-quote.el"))
+  (should (lisp-extra-font-lock-test-file "files/exclude.el")))
 
 (provide 'lisp-extra-font-lock-test-files)
 
