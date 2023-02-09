@@ -577,6 +577,16 @@ the end of the quoted expression."
   "List of `cl-loop' named variable binding parameters.")
 
 
+(defvar lisp-extra-font-lock--loop-keywords-regexp
+  (concat
+   "\\_<"
+   "\\("
+   (regexp-opt (append
+                lisp-extra-font-lock-loop-keywords-with-var
+                lisp-extra-font-lock-loop-keywords))
+   "\\)"
+   "\\_>"))
+
 ;; Match named loop keywords, and (optionally) any bound variables.
 ;;
 ;; Note, does not support "destructuring", i.e. binding several
@@ -589,14 +599,7 @@ the end of the quoted expression."
         (forward-comment (buffer-size))
         (and (< (point) limit)
              (not (looking-at
-                   (concat
-                    "\\_<"
-                    "\\("
-                    (regexp-opt (append
-                                 lisp-extra-font-lock-loop-keywords-with-var
-                                 lisp-extra-font-lock-loop-keywords))
-                    "\\)"
-                    "\\_>")))))
+                   lisp-extra-font-lock--loop-keywords-regexp))))
     (condition-case nil
         (forward-sexp)
       (error (goto-char limit))))
