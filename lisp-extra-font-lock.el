@@ -228,6 +228,11 @@ special variables like plain variables, set this to
     "let*"
     "letf"
     "letf*"
+    "letrec"
+    "if-let"
+    "if-let*"
+    "when-let"
+    "when-let*"
     "lexical-let"
     "lexical-let*"
     "multiple-value-bind"
@@ -244,6 +249,7 @@ special variables like plain variables, set this to
 (defcustom lisp-extra-font-lock-defun-functions
   '("defun"
     "defun*"
+    "define-inline"
     "defmacro"
     "defmacro*"
     "defsubst"
@@ -256,7 +262,7 @@ special variables like plain variables, set this to
 
 
 (defcustom lisp-extra-font-lock-lambda-functions
-  '("lambda")
+  '("lambda" "pcase-lambda")
   "List of function using same syntax as `lambda' to bind variables."
   :type '(repeat string)
   :group 'lisp-extra-font-lock)
@@ -265,6 +271,7 @@ special variables like plain variables, set this to
 (defcustom lisp-extra-font-lock-dolist-functions
   '("dolist"
     "dotimes"
+    "pcase-dolist"
     "cl-dolist"
     "cl-dotimes")
   "List of function using same syntax as `dolist' to bind variables."
@@ -273,7 +280,9 @@ special variables like plain variables, set this to
 
 
 (defcustom lisp-extra-font-lock-bind-first-functions
-  '("condition-case")
+  '("condition-case"
+    "condition-case-no-debug"
+    "condition-case-unless-debug")
   "List of function that bind their first argument."
   :type '(repeat string)
   :group 'lisp-extra-font-lock)
